@@ -1,0 +1,151 @@
+
+# coding: utf-8
+
+# In[8]:
+
+
+import numpy as np
+import os
+from matplotlib import pyplot as plt
+import pandas as pd
+from sklearn.linear_model import LinearRegression
+
+
+# In[11]:
+
+
+dia_df = pd.read_csv('/Users/karthickrajamani/datasets/diabetics/diabetes.csv')
+dia_df.head(5)
+
+
+# In[12]:
+
+
+from matplotlib import pyplot as plt
+dia_df.hist(bins=20, figsize = (20,15))
+plt.show()
+
+
+# In[13]:
+
+
+dia_df.dtypes
+corr_matrix = dia_df.corr()
+corr_matrix['Outcome'].sort_values(ascending=False)
+
+
+# In[15]:
+
+
+from pandas.tools.plotting import scatter_matrix
+attributes = ['Outcome', 'Glucose','BMI','Age','Pregnancies','DiabetesPedigreeFunction','Insulin','SkinThickness','BloodPressure']
+scatter_matrix(dia_df[attributes], figsize=(12, 8))
+
+
+# In[16]:
+
+
+
+from sklearn.model_selection import train_test_split
+train_set, test_set = train_test_split(dia_df, test_size = 0.25, random_state = 42)
+print ("Train test shape is {0} and Test set shape is {1}".format(train_set.shape,test_set.shape))
+
+
+# In[17]:
+
+
+X_train = train_set.drop(['Outcome'], axis=1)
+y_train = train_set['Outcome']
+X_test = test_set.drop(['Outcome'], axis=1)
+y_test = test_set['Outcome']
+
+
+# In[18]:
+
+
+from sklearn.linear_model import LogisticRegression
+lr = LogisticRegression()
+lr.fit(X_train, y_train)
+lr
+
+
+# In[20]:
+
+
+from sklearn.model_selection import cross_val_predict
+y_train_pred = cross_val_predict(lr, X_train, y_train, cv=3)
+from sklearn.metrics import confusion_matrix
+confusion_matrix(y_train, y_train_pred)
+
+
+# In[22]:
+
+
+from sklearn.linear_model import SGDClassifier
+sgd_clf = SGDClassifier()
+sgd_clf.fit(X_train,y_train)
+sgd_clf
+
+
+# In[23]:
+
+
+y_train_pred = cross_val_predict(sgd_clf, X_train, y_train, cv=3)
+confusion_matrix(y_train, y_train_pred)
+
+
+# In[24]:
+
+
+from sklearn.ensemble import RandomForestClassifier
+rfc_clf = RandomForestClassifier()
+rfc_clf.fit(X_train, y_train)
+rfc_clf
+
+
+# In[25]:
+
+
+y_train_pred = cross_val_predict(rfc_clf, X_train, y_train, cv=3)
+confusion_matrix(y_train, y_train_pred)
+
+
+# In[26]:
+
+
+from sklearn.tree import DecisionTreeClassifier
+dt_clf = DecisionTreeClassifier()
+dt_clf.fit(X_train, y_train)
+dt_clf
+
+
+# In[27]:
+
+
+y_train_pred = cross_val_predict(dt_clf, X_train, y_train, cv=3)
+confusion_matrix(y_train, y_train_pred)
+
+
+# In[28]:
+
+
+y_test_pred = rfc_clf.predict(X_test)
+confusion_matrix(y_test_pred,y_test)
+
+
+# In[44]:
+
+
+from sklearn.model_selection import GridSearchCV
+
+param_grid = [{'min_samples_leaf' : [1,5,10], 'min_samples_split' : [2,5,10]}]
+rfc_clf=RandomForestClassifier()
+grid_search = GridSearchCV(rfc_clf, param_grid, cv=3, scoring = 'neg_mean_squared_error')
+grid_search.fit(X_train,y_train)
+
+print (grid_search.best_params_, grid_search.best_estimator_)
+
+cvres = grid_search.cv_results_
+for mean_score, params in zip (cvres['mean_test_score'], cvres['params']):
+    print(np.sqrt(- mean_score), params)
+
